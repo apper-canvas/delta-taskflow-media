@@ -43,15 +43,16 @@ function MainFeature({ onTasksUpdated, isDarkMode }) {
   }, []);
 
   // Save tasks to localStorage whenever they change
-  useEffect(() => {
-    const saveToStorage = () => {
-      localStorage.setItem('tasks', JSON.stringify(tasks));
-      if (onTasksUpdated) {
-        onTasksUpdated(tasks);
-      }
-    };
-    saveToStorage();
+  const saveToStorage = useCallback(() => {
+    localStorage.setItem('tasks', JSON.stringify(tasks));
+    if (onTasksUpdated) {
+      onTasksUpdated(tasks);
+    }
   }, [tasks, onTasksUpdated]);
+  
+  useEffect(() => {
+    saveToStorage();
+  }, [tasks, saveToStorage]);
 
   // Filter and sort tasks
   const filteredTasks = tasks.filter(task => {
