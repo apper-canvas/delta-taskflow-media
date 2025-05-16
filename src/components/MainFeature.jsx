@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState, useEffect, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion'; 
 import { toast } from 'react-toastify';
 import getIcon from '../utils/iconUtils';
 
@@ -44,10 +44,13 @@ function MainFeature({ onTasksUpdated, isDarkMode }) {
 
   // Save tasks to localStorage whenever they change
   useEffect(() => {
-    localStorage.setItem('tasks', JSON.stringify(tasks));
-    if (onTasksUpdated) {
-      onTasksUpdated(tasks);
-    }
+    const saveToStorage = () => {
+      localStorage.setItem('tasks', JSON.stringify(tasks));
+      if (onTasksUpdated) {
+        onTasksUpdated(tasks);
+      }
+    };
+    saveToStorage();
   }, [tasks, onTasksUpdated]);
 
   // Filter and sort tasks
