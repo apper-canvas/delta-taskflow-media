@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion'; 
 import { toast } from 'react-toastify';
 import getIcon from '../utils/iconUtils';
+import { useProjects } from '../context/ProjectContext';
 
 // Icon declarations
 const Plus = getIcon('Plus');
@@ -10,16 +11,19 @@ const Trash2 = getIcon('Trash2');
 const CheckCircle = getIcon('CheckCircle');
 const Clock = getIcon('Clock');
 const AlertCircle = getIcon('AlertCircle');
+const Folder = getIcon('Folder');
 const Check = getIcon('Check');
 const X = getIcon('X');
 const MoveRight = getIcon('MoveRight');
 const Filter = getIcon('Filter');
+const Filter = getIcon('Filter');
 const Search = getIcon('Search');
+  const { projects, openModal } = useProjects();
 const Calendar = getIcon('Calendar');
 const Flag = getIcon('Flag');
 const Tag = getIcon('Tag');
 
-function MainFeature({ onTasksUpdated, isDarkMode }) {
+  });
   // Task state
   const [tasks, setTasks] = useState([]);
   const [taskFormOpen, setTaskFormOpen] = useState(false);
@@ -27,7 +31,9 @@ function MainFeature({ onTasksUpdated, isDarkMode }) {
   const [filterPriority, setFilterPriority] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
 
+    projectId: 'default',
   // Task form state
+  const [selectedProject, setSelectedProject] = useState('all');
   const [taskTitle, setTaskTitle] = useState('');
   const [taskDescription, setTaskDescription] = useState('');
   const [taskDueDate, setTaskDueDate] = useState('');
@@ -85,6 +91,7 @@ function MainFeature({ onTasksUpdated, isDarkMode }) {
 
   // Open task form for creating a new task
   const handleOpenTaskForm = () => {
+      projectId: 'default',
     setTaskFormOpen(true);
     setEditingTask(null);
     resetFormFields();
@@ -138,6 +145,14 @@ function MainFeature({ onTasksUpdated, isDarkMode }) {
     
     if (!taskTitle.trim()) {
       toast.error("Task title is required");
+  const getFilteredTasks = (status) => {
+    if (selectedProject === 'all') {
+      return getTasksByStatus(status);
+    } else {
+      return tasks.filter(task => task.status === status && task.projectId === selectedProject);
+    }
+  };
+
       return;
     }
 
@@ -152,6 +167,24 @@ function MainFeature({ onTasksUpdated, isDarkMode }) {
       createdAt: editingTask ? editingTask.createdAt : new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
+
+      {/* Project filter controls */}
+      <div className="flex flex-wrap items-center mb-4 gap-2">
+        <div className="flex items-center">
+          <Filter className="h-5 w-5 mr-2 text-surface-500" />
+          <select 
+            value={selectedProject}
+            onChange={(e) => setSelectedProject(e.target.value)}
+            className="input py-1 px-3 pr-8"
+          >
+            <option value="all">All Projects</option>
+            {projects.map(project => (
+              <option key={project.id} value={project.id}>{project.name}</option>
+            ))}
+          </select>
+        </div>
+        <button onClick={openModal} className="btn btn-secondary btn-sm"><Folder className="h-4 w-4 mr-1" /> Add Project</button>
+      </div>
 
     if (editingTask) {
       // Update existing task
@@ -194,6 +227,18 @@ function MainFeature({ onTasksUpdated, isDarkMode }) {
       medium: { 
         class: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300", 
         icon: <Clock className="w-3 h-3 mr-1" /> 
+              <div className="mb-4">
+                <label htmlFor="project" className="label flex items-center">
+                  <Folder className="h-4 w-4 mr-1" /> Project
+                </label>
+                <select id="project" value={newTask.projectId} onChange={(e) => setNewTask({...newTask, projectId: e.target.value})} className="input">
+                  <option disabled>Select a project</option>
+                  {projects.map(project => (
+                    <option key={project.id} value={project.id}>{project.name}</option>
+                  ))}
+                </select>
+              </div>
+
       },
       high: { 
         class: "bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300", 
@@ -227,7 +272,7 @@ function MainFeature({ onTasksUpdated, isDarkMode }) {
     return dueDate < today;
   };
 
-  return (
+          <h3 className="text-md font-semibold mb-2 flex items-center">To Do <span className="ml-2 text-xs bg-surface-200 dark:bg-surface-700 px-2 py-0.5 rounded-full">{getFilteredTasks('todo').length}</span></h3>
     <div>
       {/* Controls */}
       <div className="mb-6 flex flex-col sm:flex-row gap-4">
@@ -235,7 +280,7 @@ function MainFeature({ onTasksUpdated, isDarkMode }) {
           <div className="relative flex-1">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               <Search className="h-5 w-5 text-surface-400" />
-            </div>
+              {getFilteredTasks('todo').length === 0 ? (
             <input
               type="text"
               className="pl-10 input"
@@ -243,7 +288,7 @@ function MainFeature({ onTasksUpdated, isDarkMode }) {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
-          </div>
+                    getFilteredTasks('todo').map(task => {
           
           <div className="sm:w-48">
             <select
@@ -265,11 +310,18 @@ function MainFeature({ onTasksUpdated, isDarkMode }) {
         >
           <Plus className="w-5 h-5 mr-2" />
           Add Task
-        </button>
+                          
+                          <div className="flex items-center mb-2">
+                            {/* Project tag */}
+                            {task.projectId && (
+                              <span className="inline-flex items-center text-xs px-2 py-0.5 rounded mr-2" style={{ backgroundColor: `${projects.find(p => p.id === task.projectId)?.color}20`, color: projects.find(p => p.id === task.projectId)?.color }}>
+                                <Folder className="w-3 h-3 mr-1" />
+                                {projects.find(p => p.id === task.projectId)?.name}
+                              </span>
+                            )}
+                          </div>
+                        
       </div>
-
-      {/* Task board */}
-      <div className="flex flex-col lg:flex-row gap-6 overflow-x-auto pb-6">
         {/* To Do Column */}
         <div className="task-column lg:w-1/3">
           <div className="mb-3 flex items-center justify-between">
@@ -292,7 +344,7 @@ function MainFeature({ onTasksUpdated, isDarkMode }) {
                 {todoTasks.map(task => (
                   <motion.div
                     key={task.id}
-                    initial={{ opacity: 0, y: 10 }}
+          <h3 className="text-md font-semibold mb-2 flex items-center">In Progress <span className="ml-2 text-xs bg-surface-200 dark:bg-surface-700 px-2 py-0.5 rounded-full">{getFilteredTasks('inProgress').length}</span></h3>
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.95 }}
                     className={`task-card ${isOverdue(task.dueDate) ? 'border-l-4 border-l-red-500' : ''}`}
@@ -300,7 +352,7 @@ function MainFeature({ onTasksUpdated, isDarkMode }) {
                     <div className="flex justify-between items-start mb-2">
                       <h4 className="font-medium text-surface-900 dark:text-white">{task.title}</h4>
                       <div className="flex gap-1">
-                        <button 
+              {getFilteredTasks('inProgress').length === 0 ? (
                           onClick={() => handleEditTask(task)}
                           className="p-1 text-surface-500 hover:text-primary"
                         >
@@ -308,7 +360,7 @@ function MainFeature({ onTasksUpdated, isDarkMode }) {
                         </button>
                         <button 
                           onClick={() => handleDeleteTask(task.id)}
-                          className="p-1 text-surface-500 hover:text-red-500"
+                    getFilteredTasks('inProgress').map(task => {
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -330,11 +382,18 @@ function MainFeature({ onTasksUpdated, isDarkMode }) {
                           <Tag className="w-3 h-3 mr-1" />
                           {tag}
                         </span>
-                      ))}
+                          
+                          <div className="flex items-center mb-2">
+                            {/* Project tag */}
+                            {task.projectId && (
+                              <span className="inline-flex items-center text-xs px-2 py-0.5 rounded mr-2" style={{ backgroundColor: `${projects.find(p => p.id === task.projectId)?.color}20`, color: projects.find(p => p.id === task.projectId)?.color }}>
+                                <Folder className="w-3 h-3 mr-1" />
+                                {projects.find(p => p.id === task.projectId)?.name}
+                              </span>
+                            )}
+                          </div>
+                        
                     </div>
-                    
-                    <div className="flex justify-between items-center">
-                      <div className="flex items-center">
                         {renderPriorityBadge(task.priority)}
                         
                         {task.dueDate && (
@@ -357,7 +416,7 @@ function MainFeature({ onTasksUpdated, isDarkMode }) {
                         Start
                       </button>
                     </div>
-                  </motion.div>
+          <h3 className="text-md font-semibold mb-2 flex items-center">Completed <span className="ml-2 text-xs bg-surface-200 dark:bg-surface-700 px-2 py-0.5 rounded-full">{getFilteredTasks('completed').length}</span></h3>
                 ))}
               </AnimatePresence>
             )}
@@ -365,7 +424,7 @@ function MainFeature({ onTasksUpdated, isDarkMode }) {
         </div>
         
         {/* In Progress Column */}
-        <div className="task-column lg:w-1/3">
+              {getFilteredTasks('completed').length === 0 ? (
           <div className="mb-3 flex items-center justify-between">
             <h3 className="text-lg font-semibold flex items-center">
               <div className="h-2.5 w-2.5 rounded-full bg-yellow-500 mr-2"></div>
@@ -373,7 +432,7 @@ function MainFeature({ onTasksUpdated, isDarkMode }) {
               <span className="ml-2 text-xs px-2 py-0.5 rounded-full bg-surface-200 dark:bg-surface-700">
                 {inProgressTasks.length}
               </span>
-            </h3>
+                    getFilteredTasks('completed').map(task => {
           </div>
           
           <div className="max-h-[60vh] overflow-y-auto pr-1">
@@ -395,11 +454,18 @@ function MainFeature({ onTasksUpdated, isDarkMode }) {
                       <h4 className="font-medium text-surface-900 dark:text-white">{task.title}</h4>
                       <div className="flex gap-1">
                         <button 
-                          onClick={() => handleEditTask(task)}
+                          
+                          <div className="flex items-center mb-2">
+                            {/* Project tag */}
+                            {task.projectId && (
+                              <span className="inline-flex items-center text-xs px-2 py-0.5 rounded mr-2" style={{ backgroundColor: `${projects.find(p => p.id === task.projectId)?.color}20`, color: projects.find(p => p.id === task.projectId)?.color }}>
+                                <Folder className="w-3 h-3 mr-1" />
+                                {projects.find(p => p.id === task.projectId)?.name}
+                              </span>
+                            )}
+                          </div>
+                        
                           className="p-1 text-surface-500 hover:text-primary"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </button>
                         <button 
                           onClick={() => handleDeleteTask(task.id)}
                           className="p-1 text-surface-500 hover:text-red-500"
