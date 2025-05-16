@@ -164,89 +164,164 @@ const MainFeature = ({ onTasksUpdated }) => {
       priority: taskPriority,
       status: taskStatus,
       tags: taskTags,
+      projectId: selectedProject !== 'all' ? selectedProject : null,
       createdAt: editingTask ? editingTask.createdAt : new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
 
-    return (
-      <div>
-        {/* Project filter controls */}
-        <div className="flex flex-wrap items-center mb-4 gap-2">
-          <div className="flex items-center">
-            <Filter className="h-5 w-5 mr-2 text-surface-500" />
-            <select 
-              value={selectedProject}
-              onChange={(e) => setSelectedProject(e.target.value)}
-              className="input py-1 px-3 pr-8"
-            >
-              <option value="all">All Projects</option>
-              {projects.map(project => (
-                <option key={project.id} value={project.id}>{project.name}</option>
-              ))}
-            </select>
-          </div>
-          <button onClick={openModal} className="btn btn-secondary btn-sm">
-            <Folder className="h-4 w-4 mr-1" /> Add Project
-          </button>
-        </div>
+    if (editingTask) {
+      // Update existing task
+      setTasks(tasks.map(task => task.id === editingTask.id ? taskData : task));
+      toast.success("Task updated successfully!");
+    } else {
+      // Add new task
+      setTasks([...tasks, taskData]);
+      toast.success("Task added successfully!");
+    }
 
-        {/* Controls */}
-        <div className="mb-6 flex flex-col sm:flex-row gap-4">
-          <div className="flex-1 flex flex-col sm:flex-row gap-3">
-            <div className="relative flex-1">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Search className="h-5 w-5 text-surface-400" />
-              </div>
-              <input
-                type="text"
-                className="pl-10 input"
-                placeholder="Search tasks..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
+    handleCloseTaskForm();
+  };
+
+  // Delete a task
+  const handleDeleteTask = (taskId) => {
+    if (confirm("Are you sure you want to delete this task?")) {
+      setTasks(tasks.filter(task => task.id !== taskId));
+      toast.success("Task deleted successfully!");
+    }
+  };
+
+  // Update task status
+  const handleUpdateStatus = (taskId, newStatus) => {
+    setTasks(tasks.map(task => 
+      task.id === taskId 
+        ? { ...task, status: newStatus, updatedAt: new Date().toISOString() } 
+        : task
+    ));
+    toast.success(`Task moved to ${newStatus.replace('_', ' ')}!`);
+  };
+
+  // Render priority badge
+  const renderPriorityBadge = (priority) => {
+    const badges = {
+      low: { 
+        class: "bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300", 
+        icon: <CheckCircle className="w-3 h-3 mr-1" /> 
+      },
+      medium: { 
+        class: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300", 
+        icon: <Clock className="w-3 h-3 mr-1" /> 
+      },
+      high: { 
+        class: "bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300", 
+        icon: <AlertCircle className="w-3 h-3 mr-1" /> 
+      }
+    };
+
+    const badge = badges[priority] || badges.medium;
+    
+    return (
+      <span className={`inline-flex items-center text-xs px-2 py-0.5 rounded-full ${badge.class}`}>
+        {badge.icon}
+        {priority.charAt(0).toUpperCase() + priority.slice(1)}
+      </span>
+    );
+  };
+
+  // Format date for display
+  const formatDate = (dateString) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return date.toLocaleDateString();
+  };
+
+  // Determine if a date is overdue
+  const isOverdue = (dateString, status) => {
+    if (!dateString || status === 'completed') return false;
+    const dueDate = new Date(dateString);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return dueDate < today;
+  };
+  
+  return (
+    <div>
+      {/* Project filter controls */}
+      <div className="flex flex-wrap items-center mb-4 gap-2">
+        <div className="flex items-center">
+          <Filter className="h-5 w-5 mr-2 text-surface-500" />
+          <select 
+            value={selectedProject}
+            onChange={(e) => setSelectedProject(e.target.value)}
+            className="input py-1 px-3 pr-8"
+          >
+            <option value="all">All Projects</option>
+            {projects.map(project => (
+              <option key={project.id} value={project.id}>{project.name}</option>
+            ))}
+          </select>
+        </div>
+        <button onClick={openModal} className="btn btn-secondary btn-sm">
+          <Folder className="h-4 w-4 mr-1" /> Add Project
+        </button>
+      </div>
+
+      {/* Controls */}
+      <div className="mb-6 flex flex-col sm:flex-row gap-4">
+        <div className="flex-1 flex flex-col sm:flex-row gap-3">
+          <div className="relative flex-1">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Search className="h-5 w-5 text-surface-400" />
             </div>
-            
-            <div className="sm:w-48">
-              <select
-                className="input"
-                value={filterPriority}
-                onChange={(e) => setFilterPriority(e.target.value)}
-              >
-                <option value="all">All Priorities</option>
-                <option value="low">Low Priority</option>
-                <option value="medium">Medium Priority</option>
-                <option value="high">High Priority</option>
-              </select>
-            </div>
+            <input
+              type="text"
+              className="pl-10 input"
+              placeholder="Search tasks..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
           </div>
           
-          <button
-            onClick={handleOpenTaskForm}
-            className="btn-primary flex-shrink-0 flex items-center justify-center"
-          >
-            <Plus className="w-5 h-5 mr-2" />
-            Add Task
-          </button>
+          <div className="sm:w-48">
+            <select
+              className="input"
+              value={filterPriority}
+              onChange={(e) => setFilterPriority(e.target.value)}
+            >
+              <option value="all">All Priorities</option>
+              <option value="low">Low Priority</option>
+              <option value="medium">Medium Priority</option>
+              <option value="high">High Priority</option>
+            </select>
+          </div>
         </div>
+        
+        <button
+          onClick={handleOpenTaskForm}
+          className="btn-primary flex-shrink-0 flex items-center justify-center"
+        >
+          <Plus className="w-5 h-5 mr-2" />
+          Add Task
+        </button>
+      </div>
 
-        <div className="flex flex-col lg:flex-row gap-4">
-          {/* To Do Column */}
-          <div className="task-column lg:w-1/3">
-            <div className="mb-3 flex items-center justify-between">
-              <h3 className="text-lg font-semibold flex items-center">
-                <div className="h-2.5 w-2.5 rounded-full bg-blue-500 mr-2"></div>
-                To Do
-                <span className="ml-2 text-xs px-2 py-0.5 rounded-full bg-surface-200 dark:bg-surface-700">
-                  {todoTasks.length}
-                </span>
-              </h3>
-            </div>
-            
-            <div className="max-h-[60vh] overflow-y-auto pr-1">
-              {todoTasks.length === 0 ? (
-                <div className="p-4 text-center text-surface-500 dark:text-surface-400 bg-surface-100 dark:bg-surface-700/50 rounded-lg">
-                  No tasks to do
-                </div>
+      <div className="flex flex-col lg:flex-row gap-4">
+        {/* To Do Column */}
+        <div className="task-column lg:w-1/3">
+          <div className="mb-3 flex items-center justify-between">
+            <h3 className="text-lg font-semibold flex items-center">
+              <div className="h-2.5 w-2.5 rounded-full bg-blue-500 mr-2"></div>
+              To Do
+              <span className="ml-2 text-xs px-2 py-0.5 rounded-full bg-surface-200 dark:bg-surface-700">
+                {todoTasks.length}
+              </span>
+            </h3>
+          </div>
+          
+          <div className="max-h-[60vh] overflow-y-auto pr-1">
+            {todoTasks.length === 0 ? (
+              <div className="p-4 text-center text-surface-500 dark:text-surface-400 bg-surface-100 dark:bg-surface-700/50 rounded-lg">
+                No tasks to do
+              </div>
               ) : (
                 <AnimatePresence>
                   {todoTasks.map(task => (
@@ -696,135 +771,9 @@ const MainFeature = ({ onTasksUpdated }) => {
     );
   };
 
-  // Delete a task
-  const handleDeleteTask = (taskId) => {
-    if (confirm("Are you sure you want to delete this task?")) {
-      setTasks(tasks.filter(task => task.id !== taskId));
-      toast.success("Task deleted successfully!");
-    }
-  };
-
-  // Update task status
-  const handleUpdateStatus = (taskId, newStatus) => {
-    setTasks(tasks.map(task => 
-      task.id === taskId 
-        ? { ...task, status: newStatus, updatedAt: new Date().toISOString() } 
-        : task
-    ));
-    toast.success(`Task moved to ${newStatus.replace('_', ' ')}!`);
-  };
-
-  // Render priority badge
-  const renderPriorityBadge = (priority) => {
-    const badges = {
-      low: { 
-        class: "bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300", 
-        icon: <CheckCircle className="w-3 h-3 mr-1" /> 
-      },
-      medium: { 
-        class: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300", 
-        icon: <Clock className="w-3 h-3 mr-1" /> 
-      },
-      high: { 
-        class: "bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300", 
-        icon: <AlertCircle className="w-3 h-3 mr-1" /> 
-      }
-    };
-
-    const badge = badges[priority] || badges.medium;
-    
-    return (
-      <span className={`inline-flex items-center text-xs px-2 py-0.5 rounded-full ${badge.class}`}>
-        {badge.icon}
-        {priority.charAt(0).toUpperCase() + priority.slice(1)}
-      </span>
-    );
-  };
-
-  // Format date for display
-  const formatDate = (dateString) => {
-    if (!dateString) return '';
-    const date = new Date(dateString);
-    return date.toLocaleDateString();
-  };
-
-  // Determine if a date is overdue
-  const isOverdue = (dateString, status) => {
-    if (!dateString || status === 'completed') return false;
-    const dueDate = new Date(dateString);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    return dueDate < today;
-  };
-
-  if (editingTask) {
-    // Update existing task
-    setTasks(tasks.map(task => task.id === editingTask.id ? taskData : task));
-    toast.success("Task updated successfully!");
-  } else {
-    // Add new task
-    setTasks([...tasks, taskData]);
-    toast.success("Task added successfully!");
-  }
-
-  handleCloseTaskForm();
-};
-                        <button 
-                          onClick={() => handleDeleteTask(task.id)}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                    
-                    {task.description && (
-                      <p className="text-sm text-surface-600 dark:text-surface-400 mb-2 line-clamp-2">
-                        {task.description}
-                      </p>
-                    )}
-                    
-                    <div className="flex flex-wrap gap-1 mb-2">
-                      {task.tags.map(tag => (
-                        <span 
-                          key={tag} 
-                          className="inline-flex items-center text-xs px-2 py-0.5 rounded-full bg-surface-200 dark:bg-surface-700 text-surface-700 dark:text-surface-300"
-                        >
-                          <Tag className="w-3 h-3 mr-1" />
-                          {tag}
-                        </span>
-                        
-                    </div>
-                        {renderPriorityBadge(task.priority)}
-                        
-                        {task.dueDate && (
-                          <span className={`ml-2 text-xs flex items-center ${
-                            isOverdue(task.dueDate) 
-                              ? 'text-red-600 dark:text-red-400' 
-                              : 'text-surface-500 dark:text-surface-400'
-                          }`}>
-                            <Calendar className="w-3 h-3 mr-1" />
-                            {formatDate(task.dueDate)}
-                          </span>
-                        )}
-                      </div>
-                      
-                      <button
-                        onClick={() => handleUpdateStatus(task.id, 'in_progress')}
-                        className="text-xs flex items-center text-primary hover:text-primary-dark"
-                      >
-                        <MoveRight className="w-3 h-3 mr-1" />
-                        Start
-                      </button>
-                    </div>
-                ))}
-              </AnimatePresence>
-            )}
-          </div>
-        </div>
-        
         {/* In Progress Column */}
               {getFilteredTasks('completed').length === 0 ? (
-          <div className="mb-3 flex items-center justify-between">
+        <div className="task-column lg:w-1/3">
             <h3 className="text-lg font-semibold flex items-center">
               <div className="h-2.5 w-2.5 rounded-full bg-yellow-500 mr-2"></div>
               In Progress
@@ -832,8 +781,9 @@ const MainFeature = ({ onTasksUpdated }) => {
                 {inProgressTasks.length}
               </span>
           </div>
+            </h3>
           
-          <div className="max-h-[60vh] overflow-y-auto pr-1">
+        
             {inProgressTasks.length === 0 ? (
               <div className="p-4 text-center text-surface-500 dark:text-surface-400 bg-surface-100 dark:bg-surface-700/50 rounded-lg">
                 No tasks in progress
@@ -857,8 +807,7 @@ const MainFeature = ({ onTasksUpdated }) => {
                         >
                           <Edit className="w-4 h-4" />
                         
-                          className="p-1 text-surface-500 hover:text-primary"
-                        <button 
+                         </button>
                           onClick={() => handleDeleteTask(task.id)}
                           className="p-1 text-surface-500 hover:text-red-500"
                         >
