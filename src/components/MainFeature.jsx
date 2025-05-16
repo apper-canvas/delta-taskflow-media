@@ -16,7 +16,6 @@ const Check = getIcon('Check');
 const X = getIcon('X');
 const MoveRight = getIcon('MoveRight');
 const Filter = getIcon('Filter');
-const Filter = getIcon('Filter');
 const Search = getIcon('Search');
   const { projects, openModal } = useProjects();
 const Calendar = getIcon('Calendar');
