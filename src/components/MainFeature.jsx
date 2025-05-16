@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion'; 
 import { toast } from 'react-toastify';
 import getIcon from '../utils/iconUtils';
@@ -40,19 +40,35 @@ function MainFeature({ onTasksUpdated, isDarkMode }) {
   useEffect(() => {
     const savedTasks = JSON.parse(localStorage.getItem('tasks')) || [];
     setTasks(savedTasks);
-  }, []);
+  }, []);  
 
-  // Save tasks to localStorage whenever they change
-  const saveToStorage = useCallback(() => {
-    localStorage.setItem('tasks', JSON.stringify(tasks));
-    if (onTasksUpdated) {
-      onTasksUpdated(tasks);
+  // Use ref to store previous task state for comparison
+  const prevTasksRef = useRef(null);
+
+  // Deep comparison function for tasks arrays
+  const tasksChanged = (prevTasks, currentTasks) => {
+    if (!prevTasks) return true;
+    if (prevTasks.length !== currentTasks.length) return true;
+    
+    // Compare each task by stringifying (deep comparison)
+    return JSON.stringify(prevTasks) !== JSON.stringify(currentTasks);
+  };
+
+  useEffect(() => {
+    // Only update localStorage and call onTasksUpdated if tasks actually changed
+    if (tasksChanged(prevTasksRef.current, tasks)) {
+      // Save to localStorage
+      localStorage.setItem('tasks', JSON.stringify(tasks));
+      
+      // Call the callback if provided
+      if (onTasksUpdated) {
+        onTasksUpdated(tasks);
+      }
+      
+      // Update the ref with current tasks
+      prevTasksRef.current = [...tasks];
     }
   }, [tasks, onTasksUpdated]);
-  
-  useEffect(() => {
-    saveToStorage();
-  }, [tasks, saveToStorage]);
 
   // Filter and sort tasks
   const filteredTasks = tasks.filter(task => {
