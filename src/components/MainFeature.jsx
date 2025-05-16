@@ -17,12 +17,11 @@ const X = getIcon('X');
 const MoveRight = getIcon('MoveRight');
 const Filter = getIcon('Filter');
 const Search = getIcon('Search');
-  const { projects, openModal } = useProjects();
 const Calendar = getIcon('Calendar');
 const Flag = getIcon('Flag');
 const Tag = getIcon('Tag');
 
-  });
+const MainFeature = ({ onTasksUpdated }) => {
   // Task state
   const [tasks, setTasks] = useState([]);
   const [taskFormOpen, setTaskFormOpen] = useState(false);
@@ -30,7 +29,6 @@ const Tag = getIcon('Tag');
   const [filterPriority, setFilterPriority] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
 
-    projectId: 'default',
   // Task form state
   const [selectedProject, setSelectedProject] = useState('all');
   const [taskTitle, setTaskTitle] = useState('');
@@ -40,6 +38,8 @@ const Tag = getIcon('Tag');
   const [taskStatus, setTaskStatus] = useState('todo');
   const [taskTags, setTaskTags] = useState([]);
   const [newTag, setNewTag] = useState('');
+  
+  const { projects, openModal } = useProjects();
 
   // Get tasks from localStorage
   useEffect(() => {
@@ -74,6 +74,16 @@ const Tag = getIcon('Tag');
       prevTasksRef.current = [...tasks];
     }
   }, [tasks, onTasksUpdated]);
+  
+  // Get filtered tasks by status
+  const getFilteredTasks = (status) => {
+    if (selectedProject === 'all') {
+      return filteredTasks.filter(task => task.status === status);
+    } else {
+      return filteredTasks.filter(task => 
+        task.status === status && task.projectId === selectedProject);
+    }
+  };
 
   // Filter and sort tasks
   const filteredTasks = tasks.filter(task => {
@@ -90,7 +100,6 @@ const Tag = getIcon('Tag');
 
   // Open task form for creating a new task
   const handleOpenTaskForm = () => {
-      projectId: 'default',
     setTaskFormOpen(true);
     setEditingTask(null);
     resetFormFields();
@@ -144,14 +153,6 @@ const Tag = getIcon('Tag');
     
     if (!taskTitle.trim()) {
       toast.error("Task title is required");
-  const getFilteredTasks = (status) => {
-    if (selectedProject === 'all') {
-      return getTasksByStatus(status);
-    } else {
-      return tasks.filter(task => task.status === status && task.projectId === selectedProject);
-    }
-  };
-
       return;
     }
 
@@ -167,6 +168,7 @@ const Tag = getIcon('Tag');
       updatedAt: new Date().toISOString()
     };
 
+    return (
       {/* Project filter controls */}
       <div className="flex flex-wrap items-center mb-4 gap-2">
         <div className="flex items-center">
@@ -184,7 +186,6 @@ const Tag = getIcon('Tag');
         </div>
         <button onClick={openModal} className="btn btn-secondary btn-sm"><Folder className="h-4 w-4 mr-1" /> Add Project</button>
       </div>
-
     if (editingTask) {
       // Update existing task
       setTasks(tasks.map(task => task.id === editingTask.id ? taskData : task));
@@ -271,7 +272,6 @@ const Tag = getIcon('Tag');
     return dueDate < today;
   };
 
-          <h3 className="text-md font-semibold mb-2 flex items-center">To Do <span className="ml-2 text-xs bg-surface-200 dark:bg-surface-700 px-2 py-0.5 rounded-full">{getFilteredTasks('todo').length}</span></h3>
     <div>
       {/* Controls */}
       <div className="mb-6 flex flex-col sm:flex-row gap-4">
@@ -287,7 +287,6 @@ const Tag = getIcon('Tag');
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
-                    getFilteredTasks('todo').map(task => {
           
           <div className="sm:w-48">
             <select
@@ -310,7 +309,6 @@ const Tag = getIcon('Tag');
           <Plus className="w-5 h-5 mr-2" />
           Add Task
                           
-                          <div className="flex items-center mb-2">
                             {/* Project tag */}
                             {task.projectId && (
                               <span className="inline-flex items-center text-xs px-2 py-0.5 rounded mr-2" style={{ backgroundColor: `${projects.find(p => p.id === task.projectId)?.color}20`, color: projects.find(p => p.id === task.projectId)?.color }}>
@@ -318,7 +316,6 @@ const Tag = getIcon('Tag');
                                 {projects.find(p => p.id === task.projectId)?.name}
                               </span>
                             )}
-                          </div>
                         
       </div>
         {/* To Do Column */}
@@ -343,7 +340,6 @@ const Tag = getIcon('Tag');
                 {todoTasks.map(task => (
                   <motion.div
                     key={task.id}
-          <h3 className="text-md font-semibold mb-2 flex items-center">In Progress <span className="ml-2 text-xs bg-surface-200 dark:bg-surface-700 px-2 py-0.5 rounded-full">{getFilteredTasks('inProgress').length}</span></h3>
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.95 }}
                     className={`task-card ${isOverdue(task.dueDate) ? 'border-l-4 border-l-red-500' : ''}`}
@@ -359,7 +355,6 @@ const Tag = getIcon('Tag');
                         </button>
                         <button 
                           onClick={() => handleDeleteTask(task.id)}
-                    getFilteredTasks('inProgress').map(task => {
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -381,16 +376,6 @@ const Tag = getIcon('Tag');
                           <Tag className="w-3 h-3 mr-1" />
                           {tag}
                         </span>
-                          
-                          <div className="flex items-center mb-2">
-                            {/* Project tag */}
-                            {task.projectId && (
-                              <span className="inline-flex items-center text-xs px-2 py-0.5 rounded mr-2" style={{ backgroundColor: `${projects.find(p => p.id === task.projectId)?.color}20`, color: projects.find(p => p.id === task.projectId)?.color }}>
-                                <Folder className="w-3 h-3 mr-1" />
-                                {projects.find(p => p.id === task.projectId)?.name}
-                              </span>
-                            )}
-                          </div>
                         
                     </div>
                         {renderPriorityBadge(task.priority)}
@@ -415,7 +400,6 @@ const Tag = getIcon('Tag');
                         Start
                       </button>
                     </div>
-          <h3 className="text-md font-semibold mb-2 flex items-center">Completed <span className="ml-2 text-xs bg-surface-200 dark:bg-surface-700 px-2 py-0.5 rounded-full">{getFilteredTasks('completed').length}</span></h3>
                 ))}
               </AnimatePresence>
             )}
@@ -431,7 +415,6 @@ const Tag = getIcon('Tag');
               <span className="ml-2 text-xs px-2 py-0.5 rounded-full bg-surface-200 dark:bg-surface-700">
                 {inProgressTasks.length}
               </span>
-                    getFilteredTasks('completed').map(task => {
           </div>
           
           <div className="max-h-[60vh] overflow-y-auto pr-1">
@@ -452,17 +435,11 @@ const Tag = getIcon('Tag');
                     <div className="flex justify-between items-start mb-2">
                       <h4 className="font-medium text-surface-900 dark:text-white">{task.title}</h4>
                       <div className="flex gap-1">
-                        <button 
-                          
-                          <div className="flex items-center mb-2">
-                            {/* Project tag */}
-                            {task.projectId && (
-                              <span className="inline-flex items-center text-xs px-2 py-0.5 rounded mr-2" style={{ backgroundColor: `${projects.find(p => p.id === task.projectId)?.color}20`, color: projects.find(p => p.id === task.projectId)?.color }}>
-                                <Folder className="w-3 h-3 mr-1" />
-                                {projects.find(p => p.id === task.projectId)?.name}
-                              </span>
-                            )}
-                          </div>
+                        <button
+                          onClick={() => handleEditTask(task)}
+                          className="p-1 text-surface-500 hover:text-primary"
+                        >
+                          <Edit className="w-4 h-4" />
                         
                           className="p-1 text-surface-500 hover:text-primary"
                         <button 
@@ -777,6 +754,6 @@ const Tag = getIcon('Tag');
       </AnimatePresence>
     </div>
   );
-}
+};
 
 export default MainFeature;
